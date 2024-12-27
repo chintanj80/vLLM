@@ -1,0 +1,40 @@
+# A100 specific configurations
+A100_CONFIGS = {
+    "memory_per_gpu": 80,  # 80GB for A100
+    "max_batch_size": 512,
+    "max_input_length": 4096,
+    "gpu_memory_utilization": 0.85
+}
+
+# To Start ray on node 1 (Main Node)
+ray start --head --port=6379 --num-gpus=8 --resources='{"node_type_a100": 8}'
+
+# To Start ray on node 2 (Second Node)
+ray start --address='<node1_address>:6379' --num-gpus=8 --resources='{"node_type_a100": 8}'
+
+# Environment variables for optimal A100 performance:
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export NCCL_P2P_DISABLE=0
+export NCCL_IB_DISABLE=0
+
+  # Ray serve configuration file (serve.yaml)
+====================================
+http_options:
+  host: 0.0.0.0
+  port: 8000
+
+runtime_env:
+  working_dir: "."
+  pip:
+    - vllm
+    - transformers
+    - torch>=2.0.0
+
+cluster_config:
+  head_node:
+    resources:
+      node_type_a100: 8
+  worker_nodes:
+    resources:
+      node_type_a100: 8
+=====================================
