@@ -1,0 +1,40 @@
+# Ray Serve Config
+serve_config = {
+    "max_concurrent_queries": 100,
+    "ray_actor_options": {
+        "num_gpus": 1,
+        "memory": 16 * 1024 * 1024 * 1024  # 16GB RAM
+    }
+}
+
+# Error Handeling
+@serve.deployment(ray_actor_options={"num_gpus": 1})
+class ResilientModelServer:
+    async def __call__(self, request: GenerateRequest) -> str:
+        try:
+            outputs = self.model.generate([request.prompt])
+            return outputs[0].outputs[0].text
+        except Exception as e:
+            logger.error(f"Error processing request: {e}")
+            raise serve.RayServeException(str(e))
+
+# Health Checks
+@serve.deployment(
+    ray_actor_options={"num_gpus": 1},
+    health_check_period_s=30,
+    health_check_timeout_s=30
+)
+class HealthCheckedServer:
+    async def check_health(self):
+        try:
+            # Test model
+            self.model.generate(["test"])
+            return True
+        except:
+            return False
+
+
+# New Line
+
+
+
